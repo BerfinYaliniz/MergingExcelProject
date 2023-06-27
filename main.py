@@ -3,15 +3,21 @@ import os
 from datetime import datetime
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
+from openpyxl.styles import Font
+import calendar
+import locale
+
+# Türkçe ay adları için locale ayarlaması
+locale.setlocale(locale.LC_TIME, 'tr_TR')
 
 klasor_yolu = input("Excel dosyalarının bulunduğu ana klasör yolunu girin: ")
-
 
 if klasor_yolu.startswith('"') and klasor_yolu.endswith('"'):
     klasor_yolu = klasor_yolu[1:-1]
 
 tarih = datetime.now().strftime("%d-%m-%Y")
-cikti_dosyasi = f"ürün-çıkış-listesi-{tarih}.xlsx"
+ay = calendar.month_name[int(datetime.now().strftime("%m"))].capitalize()
+cikti_dosyasi = f"caka-{ay}-ürün-çıkış-listesi-{tarih}.xlsx"
 
 veri_listesi = []
 
@@ -23,6 +29,7 @@ for root, dirs, files in os.walk(klasor_yolu):
             satir_sayisi = excel_veri.shape[0]
             klasor_adi = os.path.basename(root)
             veri_listesi.append((klasor_adi, dosya_adi, satir_sayisi))
+
 for veri in veri_listesi:
     klasor_adi, dosya_adi, satir_sayisi = veri
     print(f"{klasor_adi} ürün grubundaki {dosya_adi} ürün: {satir_sayisi} adet")
@@ -35,12 +42,24 @@ workbook = Workbook()
 worksheet = workbook.active
 worksheet.title = 'Veriler'
 
-df['Ürün Adı'] = df['Ürün Adı'].str.replace('.xlsx', '')
+# Başlık fontunu oluşturma
+bold_font = Font(bold=True)
 
+# Başlıkları yazma
+basliklar = df.columns.tolist()
+for col_num, baslik in enumerate(basliklar, start=1):
+    col_letter = get_column_letter(col_num)
+    cell = worksheet[f"{col_letter}1"]
+    cell.value = baslik
+    cell.font = bold_font
+
+# Verileri yazma
 for index, row in df.iterrows():
     for col_num, value in enumerate(row, start=1):
         col_letter = get_column_letter(col_num)
-        worksheet[f"{col_letter}{index+1}"] = value
+        if col_num == 2:  # Ürün Adı sütunu
+            value = str(value).rstrip('.xlsx').rstrip('.xls')
+        worksheet[f"{col_letter}{index + 2}"] = value
 
 # Sütun genişliklerini ayarlama
 for col in worksheet.columns:
@@ -52,7 +71,7 @@ for col in worksheet.columns:
                 max_length = len(cell.value)
         except:
             pass
-    adjusted_width = (max_length + 2) * 1.2
+    adjusted_width = (max_length + 8) * 1.2
     worksheet.column_dimensions[column].width = adjusted_width
 
 workbook.save(cikti_dosyasi)
