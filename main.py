@@ -28,24 +28,34 @@ for root, dirs, files in os.walk(klasor_yolu):
             excel_veri = pd.read_excel(dosya_yolu)
             satir_sayisi = excel_veri.shape[0]
             klasor_adi = os.path.basename(root)
+
+            # Klasördeki metin dosyasının adını alın
+            metin_dosyasi_adi = ""
+            for dosya in os.listdir(root):
+                if dosya.endswith('.txt'):
+                    metin_dosyasi_adi = dosya
+                    break
+
+            # Klasör adını metin dosyasının adıyla değiştirme
+            klasor_adi = metin_dosyasi_adi.replace(".txt", "")
+
+            # Dosya adını uzantıları kaldırarak güncelleme
+            dosya_adi = dosya_adi.split(".")[0]
+
             veri_listesi.append((klasor_adi, dosya_adi, satir_sayisi))
 
 for veri in veri_listesi:
     klasor_adi, dosya_adi, satir_sayisi = veri
-    print(f"{klasor_adi} ürün grubundaki {dosya_adi} ürün: {satir_sayisi} adet")
+    print(f"{klasor_adi} stok kodundaki {dosya_adi} ürün: {satir_sayisi} adet")
 
-# Çıktıyı yeni bir Excel dosyasına yazdırma
-df = pd.DataFrame(veri_listesi, columns=['Ürün Grubu', 'Ürün Adı', 'Ürün Adedi'])
+df = pd.DataFrame(veri_listesi, columns=['Stok Kodu', 'Ürün Adı', 'Ürün Adedi'])
 
-# Excel dosyasını oluşturma
 workbook = Workbook()
 worksheet = workbook.active
 worksheet.title = 'Veriler'
 
-# Başlık fontunu oluşturma
 bold_font = Font(bold=True)
 
-# Başlıkları yazma
 basliklar = df.columns.tolist()
 for col_num, baslik in enumerate(basliklar, start=1):
     col_letter = get_column_letter(col_num)
@@ -53,15 +63,13 @@ for col_num, baslik in enumerate(basliklar, start=1):
     cell.value = baslik
     cell.font = bold_font
 
-# Verileri yazma
 for index, row in df.iterrows():
     for col_num, value in enumerate(row, start=1):
         col_letter = get_column_letter(col_num)
-        if col_num == 2:  # Ürün Adı sütunu
-            value = str(value).rstrip('.xlsx').rstrip('.xls')
+        if col_num == 2:
+            value = str(value).split(".")[0]  # Uzantıyı kaldırma
         worksheet[f"{col_letter}{index + 2}"] = value
 
-# Sütun genişliklerini ayarlama
 for col in worksheet.columns:
     max_length = 0
     column = col[0].column_letter
